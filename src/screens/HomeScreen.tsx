@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useEffect } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -8,10 +8,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Carousel from 'react-native-snap-carousel';
+import { GradientView } from '../components/GradientView';
 import { HorizontalSlider } from '../components/HorizontalSlider';
 import { MovieCard } from '../components/MovieCard';
+import { GradientContext } from '../context/GradientContext';
 import { useMovies } from '../hooks/useMovies';
 import { Movie } from '../model/movie';
+import { getImageColors } from '../utils/imageUtils';
 
 export const HomeScreen = () => {
   const [nowPlayingMovies, isLoadingNowPlaying] = useMovies('now_playing');
@@ -20,7 +23,19 @@ export const HomeScreen = () => {
   const [upcomingMovies, isLoadingUpcoming] = useMovies('upcoming');
   const { top } = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  useState;
+  const { setMainColors } = useContext(GradientContext);
+
+  const getColors = async (index: number) => {
+    const uri = `https://image.tmdb.org/t/p/w500${nowPlayingMovies[index].poster_path}`;
+    const colors = await getImageColors(uri);
+    setMainColors(colors);
+  };
+
+  useEffect(() => {
+    if (nowPlayingMovies.length > 0) {
+      getColors(0);
+    }
+  }, [nowPlayingMovies]);
 
   if (isLoadingNowPlaying) {
     return (
@@ -31,39 +46,43 @@ export const HomeScreen = () => {
   }
 
   return (
-    <ScrollView>
-      <View style={{ marginTop: top + 20 }}>
-        <View style={styles.carouselContainer}>
-          <Carousel
-            data={nowPlayingMovies}
-            renderItem={({ item }: { item: Movie }) => (
-              <MovieCard movie={item} />
-            )}
-            sliderWidth={width}
-            itemWidth={230}
-            inactiveSlideOpacity={0.5}
+    <GradientView>
+      <ScrollView>
+        <View style={{ marginTop: top + 20 }}>
+          <View style={styles.carouselContainer}>
+            <Carousel
+              data={nowPlayingMovies}
+              renderItem={({ item }: { item: Movie }) => (
+                <MovieCard movie={item} />
+              )}
+              sliderWidth={width}
+              itemWidth={240}
+              inactiveSlideOpacity={0.8}
+              // onSnapToItem={getImageColors}
+              onBeforeSnapToItem={getColors}
+            />
+          </View>
+
+          <HorizontalSlider
+            title="Popular"
+            data={popularMovies}
+            loading={isLoadingPopular}
+          />
+
+          <HorizontalSlider
+            title="Top rated"
+            data={topRatedMovies}
+            loading={isLoadingTopRated}
+          />
+
+          <HorizontalSlider
+            title="Upcoming"
+            data={upcomingMovies}
+            loading={isLoadingUpcoming}
           />
         </View>
-
-        <HorizontalSlider
-          title="Popular"
-          data={popularMovies}
-          loading={isLoadingPopular}
-        />
-
-        <HorizontalSlider
-          title="Top rated"
-          data={topRatedMovies}
-          loading={isLoadingTopRated}
-        />
-
-        <HorizontalSlider
-          title="Upcoming"
-          data={upcomingMovies}
-          loading={isLoadingUpcoming}
-        />
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </GradientView>
   );
 };
 
